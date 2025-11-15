@@ -12,8 +12,8 @@ html, body {
 }
 
 .carousel-container {
-  width: 50vw;
-  max-width: 200px;
+  width: 60vw;
+  max-width: 250px;
   height: 90vh;
   overflow: visible;
   display: flex;
@@ -25,25 +25,28 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: transform 0.25s ease-out;
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
 }
 
 .station {
   width: 100%;
-  margin: -10px 0; /* перекрытие для барабанного эффекта */
+  margin: -20px 0; /* перекрытие для барабана */
   text-align: center;
-  transition: transform 0.25s ease-out, opacity 0.25s ease-out;
-  opacity: 0.4;
-}
-
-.station.active {
-  transform: scale(1.5);
-  opacity: 1;
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.25s;
+  opacity: 0.3;
 }
 
 .station img {
   width: 100%;
-  border-radius: 15%;
+  border-radius: 20%;
   pointer-events: none;
   user-select: none;
+  display: block;
+}
+
+.station.active {
+  transform: scale(2);
+  opacity: 1;
+  z-index: 10;
 }
