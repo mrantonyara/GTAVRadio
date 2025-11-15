@@ -5,60 +5,82 @@ for (let i = 0; i <= 21; i++) {
         id: i,
         name: `Station ${i}`,
         icon: `assets/icons/${i}.png`,
-        mp3: `http://your-nas-ip/mp3/${i}.mp3` // пока заглушка
+        mp3: `http://your-nas-ip/mp3/${i}.mp3` // заменить на реальные URL mp3
     });
 }
 
 // ====== HTML ЭЛЕМЕНТЫ ======
-const stationIcon = document.getElementById("station-icon");
-const stationName = document.getElementById("station-name");
+const carousel = document.querySelector('.carousel');
+const stationIcon = document.getElementById('station-icon');
+const stationName = document.getElementById('station-name');
 
-// ====== ПЕРЕМЕННЫЕ ДЛЯ ВРАЩЕНИЯ ======
+// ====== ЛОГИКА КАРУСЕЛИ ======
 let currentStationIndex = 0;
-let startY = 0;
-let isDragging = false;
 
-// ====== ОБНОВЛЕНИЕ СТАНЦИИ ======
-function updateStation(index) {
-    currentStationIndex = (index + stations.length) % stations.length;
-    const station = stations[currentStationIndex];
+// Создаём элементы карусели
+function populateCarousel() {
+    carousel.innerHTML = '';
+    const prevIndex = (currentStationIndex - 1 + stations.length) % stations.length;
+    const nextIndex = (currentStationIndex + 1) % stations.length;
 
-    // меняем иконку и название
-    stationIcon.src = station.icon;
-    stationName.innerText = station.name;
+    const indices = [prevIndex, currentStationIndex, nextIndex];
 
-    // haptic feedback
-    if ("vibrate" in navigator) navigator.vibrate(15);
+    indices.forEach((i) => {
+        const stationDiv = document.createElement('div');
+        stationDiv.classList.add('station');
+        if (i === currentStationIndex) stationDiv.classList.add('active');
 
-    // проигрывание mp3 (пока placeholder)
-    // const audio = new Audio(station.mp3);
-    // audio.play();
+        const img = document.createElement('img');
+        img.src = stations[i].icon;
+
+        const p = document.createElement('p');
+        p.innerText = stations[i].name;
+
+        stationDiv.appendChild(img);
+        stationDiv.appendChild(p);
+        carousel.appendChild(stationDiv);
+    });
+
+    // Обновляем центральную станцию
+    updateCurrentStation();
 }
 
-// ====== ОБРАБОТЧИКИ ДЛЯ СВАЙПОВ ======
-const wheelContainer = document.querySelector(".wheel-container");
+function updateCurrentStation() {
+    const station = stations[currentStationIndex];
+    stationIcon.src = station.icon;
+    stationName.innerText = station.name;
+}
 
-wheelContainer.addEventListener("touchstart", (e) => {
+// ====== ПРОКРУТКА ПАЛЬЦЕМ ======
+let startX = 0;
+let isDragging = false;
+
+carousel.addEventListener('touchstart', (e) => {
     isDragging = true;
-    startY = e.touches[0].clientY;
+    startX = e.touches[0].clientX;
 });
 
-wheelContainer.addEventListener("touchmove", (e) => {
+carousel.addEventListener('touchmove', (e) => {
     if (!isDragging) return;
+    const currentX = e.touches[0].clientX;
+    const delta = startX - currentX;
 
-    const currentY = e.touches[0].clientY;
-    const delta = startY - currentY;
-
-    // если свайп вверх — следующая станция, вниз — предыдущая
-    if (delta > 30) {        // порог свайпа
-        updateStation(currentStationIndex + 1);
-        startY = currentY;
-    } else if (delta < -30) {
-        updateStation(currentStationIndex - 1);
-        startY = currentY;
+    if (delta > 30) { // свайп влево → следующая станция
+        currentStationIndex = (currentStationIndex + 1) % stations.length;
+        populateCarousel();
+        startX = currentX;
+        navigator.vibrate?.(15);
+    } else if (delta < -30) { // свайп вправо → предыдущая станция
+        currentStationIndex = (currentStationIndex - 1 + stations.length) % stations.length;
+        populateCarousel();
+        startX = currentX;
+        navigator.vibrate?.(15);
     }
 });
 
-wheelContainer.addEventListener("touchend", () => {
+carousel.addEventListener('touchend', () => {
     isDragging = false;
 });
+
+// ====== ИНИЦИАЛИЗАЦИЯ ======
+populateCarousel();
