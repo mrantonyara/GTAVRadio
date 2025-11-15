@@ -1,41 +1,81 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GTA 5 Radio</title>
+/* Общие стили */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', sans-serif;
+  background: linear-gradient(135deg, #1a1a1a, #000);
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  flex-direction: column;
+  text-align: center;
+}
 
-  <!-- PWA manifest -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="assets/icons/0.png">
+.app-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  letter-spacing: 1px;
+}
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="style.css">
+/* Карусель */
+.carousel-container {
+  width: 260px;
+  overflow: hidden;
+  margin-bottom: 30px;
+}
 
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-</head>
-<body>
-  <div class="app-container">
-    <h1 class="app-title">GTA 5 Radio</h1>
+.carousel {
+  display: flex;
+  flex-direction: row;
+  transition: transform 0.3s ease;
+}
 
-    <!-- Карусель -->
-    <div class="carousel-container">
-      <div class="carousel">
-        <!-- JS будет наполнять станции здесь -->
-      </div>
-    </div>
+.station {
+  flex: 0 0 80px;
+  text-align: center;
+  opacity: 0.5;
+  transform: scale(0.8);
+  transition: transform 0.3s, opacity 0.3s;
+  user-select: none;
+}
 
-    <!-- Текущая станция -->
-    <div class="current-station">
-      <img id="station-icon" src="assets/icons/0.png" alt="Station Icon">
-      <p id="station-name">Station 0</p>
-    </div>
+.station.active {
+  opacity: 1;
+  transform: scale(1.2);
+}
 
-  </div>
+.station img {
+  width: 80px;
+  height: 80px;
+  border-radius: 15px;
+  margin-bottom: 5px;
+}
 
-  <script src="script.js"></script>
-</body>
-</html>
+.station p {
+  font-size: 14px;
+  color: #fff;
+  margin: 0;
+}
+
+/* Текущая станция */
+.current-station {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.current-station img {
+  width: 100px;
+  height: 100px;
+  border-radius: 15px;
+  margin-bottom: 10px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
+
+.current-station p {
+  font-size: 20px;
+  font-weight: 700;
+}
