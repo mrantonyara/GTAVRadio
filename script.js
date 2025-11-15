@@ -1,58 +1,54 @@
-// ====== НАСТРОЙКА СТАНЦИЙ ======
+// ====== Настройка станций ======
 const stations = [];
 for (let i = 0; i <= 21; i++) {
     stations.push({
         id: i,
-        name: `Station ${i}`,
-        icon: `assets/icons/${i}.png`,
-        mp3: `http://your-nas-ip/mp3/${i}.mp3` // позже заменим на NAS
+        icon: `assets/icons/${i}.png`
     });
 }
 
-// ====== HTML ЭЛЕМЕНТЫ ======
+// ====== Элементы ======
 const carousel = document.querySelector('.carousel');
-const stationIcon = document.getElementById('station-icon');
-const stationName = document.getElementById('station-name');
 const clickSound = document.getElementById('click-sound');
 
-// ====== ПЕРЕМЕННЫЕ ======
+// ====== Переменные ======
 let currentStationIndex = 0;
 
-// ====== ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ КАРУСЕЛИ ======
+// ====== Создание элементов карусели ======
 function populateCarousel() {
     carousel.innerHTML = '';
-    const prevIndex = (currentStationIndex - 1 + stations.length) % stations.length;
-    const nextIndex = (currentStationIndex + 1) % stations.length;
 
-    const indices = [prevIndex, currentStationIndex, nextIndex];
-
-    indices.forEach((i) => {
+    // берём 5 элементов: 2 слева, центр, 2 справа для плавного эффекта
+    for (let offset = -2; offset <= 2; offset++) {
+        let index = (currentStationIndex + offset + stations.length) % stations.length;
         const stationDiv = document.createElement('div');
         stationDiv.classList.add('station');
-        if (i === currentStationIndex) stationDiv.classList.add('active');
+        if (offset === 0) stationDiv.classList.add('active');
 
         const img = document.createElement('img');
-        img.src = stations[i].icon;
-
-        const p = document.createElement('p');
-        p.innerText = stations[i].name;
-
+        img.src = stations[index].icon;
         stationDiv.appendChild(img);
-        stationDiv.appendChild(p);
         carousel.appendChild(stationDiv);
+    }
+
+    updateCarouselPositions();
+}
+
+// ====== Анимация “барабана” ======
+function updateCarouselPositions() {
+    const items = carousel.querySelectorAll('.station');
+    items.forEach((item, i) => {
+        const offset = i - 2; // центр на 0
+        const scale = 1 - Math.abs(offset) * 0.3;
+        const opacity = 1 - Math.abs(offset) * 0.3;
+        item.style.transform = `translateX(${offset * 40}px) scale(${scale})`;
+        item.style.opacity = opacity;
+        if (offset === 0) item.classList.add('active');
+        else item.classList.remove('active');
     });
-
-    updateCurrentStation();
 }
 
-// ====== ОБНОВЛЕНИЕ ЦЕНТРАЛЬНОЙ СТАНЦИИ ======
-function updateCurrentStation() {
-    const station = stations[currentStationIndex];
-    stationIcon.src = station.icon;
-    stationName.innerText = station.name;
-}
-
-// ====== ОБРАБОТКА СВАЙПОВ ======
+// ====== Свайпы ======
 let startX = 0;
 let isDragging = false;
 
@@ -66,14 +62,14 @@ carousel.addEventListener('touchmove', (e) => {
     const currentX = e.touches[0].clientX;
     const delta = startX - currentX;
 
-    if (delta > 20) { // свайп влево → следующая станция
+    if (delta > 20) { // свайп влево → следующая
         currentStationIndex = (currentStationIndex + 1) % stations.length;
         populateCarousel();
         startX = currentX;
         navigator.vibrate?.(15);
         clickSound.currentTime = 0;
         clickSound.play();
-    } else if (delta < -20) { // свайп вправо → предыдущая станция
+    } else if (delta < -20) { // свайп вправо → предыдущая
         currentStationIndex = (currentStationIndex - 1 + stations.length) % stations.length;
         populateCarousel();
         startX = currentX;
@@ -87,5 +83,5 @@ carousel.addEventListener('touchend', () => {
     isDragging = false;
 });
 
-// ====== ИНИЦИАЛИЗАЦИЯ ======
+// ====== Инициализация ======
 populateCarousel();
