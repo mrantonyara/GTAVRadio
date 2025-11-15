@@ -5,16 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GTA 5 Radio</title>
 
-  <!-- PWA manifest -->
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="assets/icons/0.png">
 
-  <!-- CSS -->
   <link rel="stylesheet" href="style.css">
-
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -24,7 +20,7 @@
     <!-- Карусель -->
     <div class="carousel-container">
       <div class="carousel">
-        <!-- JS будет наполнять станции здесь -->
+        <!-- JS создаст элементы -->
       </div>
     </div>
 
@@ -34,6 +30,8 @@
       <p id="station-name">Station 0</p>
     </div>
 
+    <!-- Звуковой щелчок -->
+    <audio id="click-sound" src="assets/click.mp3" preload="auto"></audio>
   </div>
 
   <script src="script.js"></script>
