@@ -8,22 +8,25 @@ for (let i = 0; i <= 21; i++) {
 const carousel = document.querySelector('.carousel');
 
 // ====== Переменные ======
-let currentStationIndex = 0;
+let currentStationIndex = Math.floor(Math.random() * stations.length); // рандомная станция
 let startY = 0;
 let velocity = 0;
 let isDragging = false;
-let lastMoveTime = 0;
+let lastTime = 0;
 let animationFrame;
 
-// ====== Создание карусели ======
+// ====== Инициализация 5 видимых станций ======
 function populateCarousel() {
     carousel.innerHTML = '';
 
-    // Показываем 5 элементов: 2 сверху, центр, 2 снизу
     for (let offset = -2; offset <= 2; offset++) {
         const index = (currentStationIndex + offset + stations.length) % stations.length;
         const div = document.createElement('div');
         div.classList.add('station');
+
+        if (offset === 0) div.classList.add('active');
+        else if (offset === -1) div.classList.add('prev');
+        else if (offset === 1) div.classList.add('next');
 
         const img = document.createElement('img');
         img.src = stations[index].icon;
@@ -34,58 +37,61 @@ function populateCarousel() {
     updatePositions();
 }
 
-// ====== Обновление позиции и масштаба ======
+// ====== Обновление позиции ======
 function updatePositions() {
     const items = carousel.querySelectorAll('.station');
     items.forEach((item, i) => {
-        const offset = i - 2; // центр = 0
-        // Чем дальше от центра, тем меньше масштаб
-        let scale = 2.2 - Math.abs(offset) * 0.3; 
-        scale = Math.max(scale, 1); // минимальный размер боковых
-        const opacity = 1 - Math.abs(offset) * 0.3;
-        const translateY = offset * 100; // расстояние между элементами
+        const offset = i - 2;
+        const scale = i === 2 ? 1.8 : 1.2;
+        const opacity = 1 - Math.abs(offset) * 0.4;
+        const translateY = offset * 120; // расстояние между элементами
         item.style.transform = `translateY(${translateY}px) scale(${scale})`;
         item.style.opacity = opacity;
         item.style.zIndex = 10 - Math.abs(offset);
-        item.classList.toggle('active', offset === 0);
     });
 }
 
-// ====== Свайпы с фиксированной скоростью и плавной инерцией ======
+// ====== Анимация с инерцией ======
 function animateInertia() {
     if (Math.abs(velocity) < 0.05) return;
+
     const delta = velocity > 0 ? -1 : 1;
     currentStationIndex = (currentStationIndex + delta + stations.length) % stations.length;
     populateCarousel();
-    velocity *= 0.90; // мягкая остановка
+
+    velocity *= 0.85; // плавная остановка
     animationFrame = requestAnimationFrame(animateInertia);
 }
 
+// ====== Свайпы ======
 carousel.addEventListener('touchstart', e => {
     isDragging = true;
     startY = e.touches[0].clientY;
     velocity = 0;
     cancelAnimationFrame(animationFrame);
-    lastMoveTime = Date.now();
+    lastTime = Date.now();
 });
 
 carousel.addEventListener('touchmove', e => {
     if (!isDragging) return;
     const currentY = e.touches[0].clientY;
     const deltaY = startY - currentY;
+    const now = Date.now();
+    const dt = now - lastTime;
 
-    // С фиксированной скоростью независимо от позиции
-    if (deltaY > 20) {
+    velocity = deltaY / dt; // скорость для инерции
+
+    if (deltaY > 15) {
         currentStationIndex = (currentStationIndex + 1) % stations.length;
-        velocity = 1;
         startY = currentY;
         populateCarousel();
-    } else if (deltaY < -20) {
+    } else if (deltaY < -15) {
         currentStationIndex = (currentStationIndex - 1 + stations.length) % stations.length;
-        velocity = -1;
         startY = currentY;
         populateCarousel();
     }
+
+    lastTime = now;
 });
 
 carousel.addEventListener('touchend', () => {
@@ -93,5 +99,5 @@ carousel.addEventListener('touchend', () => {
     animateInertia();
 });
 
-// ====== Инициализация ======
+// ====== Старт ======
 populateCarousel();
