@@ -5,7 +5,7 @@ for (let i = 0; i <= 21; i++) {
         id: i,
         name: `Station ${i}`,
         icon: `assets/icons/${i}.png`,
-        mp3: `http://your-nas-ip/mp3/${i}.mp3` // заменить на реальные URL mp3
+        mp3: `http://your-nas-ip/mp3/${i}.mp3` // позже заменим на NAS
     });
 }
 
@@ -13,11 +13,12 @@ for (let i = 0; i <= 21; i++) {
 const carousel = document.querySelector('.carousel');
 const stationIcon = document.getElementById('station-icon');
 const stationName = document.getElementById('station-name');
+const clickSound = document.getElementById('click-sound');
 
-// ====== ЛОГИКА КАРУСЕЛИ ======
+// ====== ПЕРЕМЕННЫЕ ======
 let currentStationIndex = 0;
 
-// Создаём элементы карусели
+// ====== ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ КАРУСЕЛИ ======
 function populateCarousel() {
     carousel.innerHTML = '';
     const prevIndex = (currentStationIndex - 1 + stations.length) % stations.length;
@@ -41,17 +42,17 @@ function populateCarousel() {
         carousel.appendChild(stationDiv);
     });
 
-    // Обновляем центральную станцию
     updateCurrentStation();
 }
 
+// ====== ОБНОВЛЕНИЕ ЦЕНТРАЛЬНОЙ СТАНЦИИ ======
 function updateCurrentStation() {
     const station = stations[currentStationIndex];
     stationIcon.src = station.icon;
     stationName.innerText = station.name;
 }
 
-// ====== ПРОКРУТКА ПАЛЬЦЕМ ======
+// ====== ОБРАБОТКА СВАЙПОВ ======
 let startX = 0;
 let isDragging = false;
 
@@ -65,16 +66,20 @@ carousel.addEventListener('touchmove', (e) => {
     const currentX = e.touches[0].clientX;
     const delta = startX - currentX;
 
-    if (delta > 30) { // свайп влево → следующая станция
+    if (delta > 20) { // свайп влево → следующая станция
         currentStationIndex = (currentStationIndex + 1) % stations.length;
         populateCarousel();
         startX = currentX;
         navigator.vibrate?.(15);
-    } else if (delta < -30) { // свайп вправо → предыдущая станция
+        clickSound.currentTime = 0;
+        clickSound.play();
+    } else if (delta < -20) { // свайп вправо → предыдущая станция
         currentStationIndex = (currentStationIndex - 1 + stations.length) % stations.length;
         populateCarousel();
         startX = currentX;
         navigator.vibrate?.(15);
+        clickSound.currentTime = 0;
+        clickSound.play();
     }
 });
 
