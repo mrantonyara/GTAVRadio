@@ -1,6 +1,5 @@
 const playlistId = 'PLLvWV__Bn2_PwR92FfrxjsZCAM7zyxzze';
 
-// Manually mapping available icons to their YouTube playlist index
 const stations = [
   { name: "Space 103.2", icon: "assets/icons/Space 103.2.png", ytIndex: 0 },
   { name: "Non-Stop-Pop FM", icon: "assets/icons/Non-Stop-Pop FM.png", ytIndex: 1 },
@@ -25,12 +24,33 @@ const stations = [
 
 const totalStations = stations.length;
 const theta = 360 / totalStations;
-const radius = Math.round((250 / 2) / Math.tan(Math.PI / totalStations)) + 50;
+let radius = 250;
 
 const carousel = document.getElementById('carousel');
-const stationNameEl = document.getElementById('station-name');
 let player = null;
 let isPlayerReady = false;
+let hasInteracted = false;
+
+// Setup DOM elements once
+stations.forEach((station, i) => {
+    const div = document.createElement('div');
+    div.classList.add('station');
+    div.id = `station-${i}`;
+    
+    const img = document.createElement('img');
+    img.src = station.icon;
+    img.onerror = () => { img.src = 'assets/icons/mute.png'; };
+    
+    div.appendChild(img);
+    carousel.appendChild(div);
+});
+
+function calculateRadius() {
+    const w = carousel.offsetWidth;
+    radius = Math.round((w / 2) / Math.tan(Math.PI / totalStations)) + (w * 0.2);
+    updateCarousel(currentRotation);
+}
+window.addEventListener('resize', calculateRadius);
 
 // Initialize YouTube Player
 function onYouTubeIframeAPIReady() {
@@ -46,8 +66,7 @@ function onYouTubeIframeAPIReady() {
             rel: 0
         },
         events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
+            'onReady': onPlayerReady
         }
     });
 }
@@ -55,38 +74,9 @@ function onYouTubeIframeAPIReady() {
 function onPlayerReady(event) {
     isPlayerReady = true;
     event.target.setVolume(100);
-    // Play initial station if it's not mute
-    playCurrentStation();
+    // Browser prevents autoplay without interaction. 
+    // We will start playing on the first swipe/click.
 }
-
-function onPlayerStateChange(event) {
-    // Keep it playing or loop if needed
-}
-
-document.getElementById('btn-play').addEventListener('click', () => {
-    if (isPlayerReady && stations[currentStationIndex].ytIndex !== -1) {
-        player.playVideo();
-    }
-});
-
-document.getElementById('btn-pause').addEventListener('click', () => {
-    if (isPlayerReady) player.pauseVideo();
-});
-
-// Setup DOM elements once
-stations.forEach((station, i) => {
-    const div = document.createElement('div');
-    div.classList.add('station');
-    div.id = `station-${i}`;
-    
-    const img = document.createElement('img');
-    img.src = station.icon;
-    // fallback if image not found
-    img.onerror = () => { img.src = 'assets/icons/mute.png'; };
-    
-    div.appendChild(img);
-    carousel.appendChild(div);
-});
 
 let isHorizontal = true;
 let currentRotation = 0;
@@ -99,9 +89,10 @@ let lastPos = 0;
 let lastTime = 0;
 let raf;
 
-document.getElementById('btn-toggle-axis').addEventListener('click', () => {
+document.getElementById('btn-toggle-axis').addEventListener('click', (e) => {
     isHorizontal = !isHorizontal;
     updateCarousel(currentRotation);
+    handleFirstInteraction();
 });
 
 function updateCarousel(rotation) {
@@ -113,7 +104,6 @@ function updateCarousel(rotation) {
 
     if (activeIndex !== currentStationIndex) {
         currentStationIndex = activeIndex;
-        stationNameEl.innerText = stations[currentStationIndex].name;
     }
 
     for (let i = 0; i < totalStations; i++) {
@@ -134,8 +124,8 @@ function updateCarousel(rotation) {
     }
 }
 
-// Initial draw
-updateCarousel(currentRotation);
+// Initial draw calculations
+setTimeout(calculateRadius, 0);
 
 // Play logic
 let playTimeout;
@@ -152,6 +142,13 @@ function playCurrentStation() {
     }, 400); 
 }
 
+function handleFirstInteraction() {
+    if (!hasInteracted && isPlayerReady) {
+        hasInteracted = true;
+        playCurrentStation();
+    }
+}
+
 // Input Handling
 function getClientPos(e) {
     if (e.touches && e.touches.length > 0) {
@@ -161,6 +158,7 @@ function getClientPos(e) {
 }
 
 function onStart(e) {
+    handleFirstInteraction();
     isDragging = true;
     const pos = getClientPos(e);
     startPos = pos;
@@ -221,12 +219,12 @@ function onEnd() {
 }
 
 // Mouse
-document.addEventListener('mousedown', e => onStart(e));
+document.addEventListener('mousedown', e => { if (e.target.id !== 'btn-toggle-axis') onStart(e); });
 document.addEventListener('mousemove', e => onMove(e));
 document.addEventListener('mouseup', onEnd);
 
 // Touch
-document.addEventListener('touchstart', e => onStart(e), {passive: false});
+document.addEventListener('touchstart', e => { if (e.target.id !== 'btn-toggle-axis') onStart(e); }, {passive: false});
 document.addEventListener('touchmove', e => {
     e.preventDefault(); 
     onMove(e);
