@@ -30,6 +30,7 @@ const carousel = document.getElementById('carousel');
 let player = null;
 let isPlayerReady = false;
 let hasInteracted = false;
+let isSwitchingStation = false;
 
 // Setup DOM elements once
 stations.forEach((station, i) => {
@@ -66,7 +67,8 @@ function onYouTubeIframeAPIReady() {
             rel: 0
         },
         events: {
-            'onReady': onPlayerReady
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
         }
     });
 }
@@ -74,8 +76,26 @@ function onYouTubeIframeAPIReady() {
 function onPlayerReady(event) {
     isPlayerReady = true;
     event.target.setVolume(100);
-    // Browser prevents autoplay without interaction. 
-    // We will start playing on the first swipe/click.
+}
+
+function onPlayerStateChange(event) {
+    // When video starts playing and we are switching stations
+    if (event.data === YT.PlayerState.PLAYING && isSwitchingStation) {
+        isSwitchingStation = false;
+        
+        let duration = player.getDuration();
+        if (duration > 0) {
+            // Pick a random time, at least 1 minute before the end to avoid instant skip
+            let maxStart = Math.max(0, duration - 60); 
+            let randomTime = Math.floor(Math.random() * maxStart);
+            player.seekTo(randomTime, true);
+        }
+        
+        // Restore volume after a tiny delay so the original start audio isn't heard
+        setTimeout(() => {
+            player.setVolume(100);
+        }, 150);
+    }
 }
 
 let isHorizontal = true;
@@ -137,6 +157,8 @@ function playCurrentStation() {
         if (s.ytIndex === -1) {
             player.pauseVideo();
         } else {
+            isSwitchingStation = true;
+            player.setVolume(0); // Mute to hide the original start
             player.playVideoAt(s.ytIndex);
         }
     }, 400); 
