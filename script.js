@@ -111,8 +111,8 @@ window.addEventListener('resize', render);
 // YouTube API
 function onYouTubeIframeAPIReady() {
     player = new YT.Player('ytplayer', {
-        height: '100',
-        width: '100',
+        height: '1',
+        width: '1',
         playerVars: {
             listType: 'playlist',
             list: playlistId,
@@ -144,9 +144,7 @@ function onPlayerStateChange(event) {
             player.seekTo(syncTime, true);
         }
         
-        setTimeout(() => {
-            player.setVolume(100);
-        }, 150);
+        player.setVolume(100);
     } else if (event.data === YT.PlayerState.ENDED) {
         const s = stations[currentStationIndex];
         if (s && s.ytIndex !== -1) {
@@ -171,11 +169,11 @@ function playCurrentStation() {
             player.setVolume(0); 
             player.playVideoAt(s.ytIndex);
         }
-    }, 300); // 300ms debounce
+    }, 80); // Fast 80ms debounce for snappy switching
 }
 
-function setActiveStation(index) {
-    if (index === currentStationIndex) return;
+function setActiveStation(index, forcePlay = false) {
+    if (index === currentStationIndex && !forcePlay) return;
     currentStationIndex = index;
     render(); // Re-render handles active classes and vertical positioning
     
@@ -187,7 +185,8 @@ function setActiveStation(index) {
 }
 
 // Initial active station
-setActiveStation(stations.length - 1); // Start with "Radio Off"
+const randomStartIndex = Math.floor(Math.random() * (totalStations - 1));
+setActiveStation(randomStartIndex); // Start with a random station
 
 // Input Handling
 let isInteracting = false;
@@ -195,12 +194,15 @@ let startY = 0;
 let startIndex = 0;
 
 function handleInteractionStart(clientX, clientY) {
+    const isFirst = !hasInteracted;
     isInteracting = true;
     if (layout === 'wheel') {
+        if (isFirst) setActiveStation(currentStationIndex, true);
         updateWheelPointer(clientX, clientY);
     } else {
         startY = clientY;
         startIndex = currentStationIndex;
+        if (isFirst) setActiveStation(currentStationIndex, true);
     }
 }
 
