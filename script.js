@@ -47,8 +47,14 @@ stations.forEach((station, i) => {
 });
 
 function calculateRadius() {
-    const w = carousel.offsetWidth;
-    radius = Math.round((w / 2) / Math.tan(Math.PI / totalStations)) + (w * 0.2);
+    let w = carousel.offsetWidth;
+    if (!w || w < 50) w = Math.min(window.innerWidth * 0.4, 250); // Fallback to viewport width
+    
+    let calcRadius = Math.round((w / 2.5) / Math.tan(Math.PI / totalStations));
+    if (isNaN(calcRadius) || calcRadius < 100) calcRadius = 250;
+    if (calcRadius > 500) calcRadius = 500;
+    
+    radius = calcRadius;
     updateCarousel(currentRotation);
 }
 window.addEventListener('resize', calculateRadius);
