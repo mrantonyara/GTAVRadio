@@ -85,16 +85,28 @@ function onPlayerStateChange(event) {
         
         let duration = player.getDuration();
         if (duration > 0) {
-            // Pick a random time, at least 1 minute before the end to avoid instant skip
-            let maxStart = Math.max(0, duration - 60); 
-            let randomTime = Math.floor(Math.random() * maxStart);
-            player.seekTo(randomTime, true);
+            // Global synchronization:
+            // Calculate current Unix timestamp in seconds
+            const nowSeconds = Math.floor(Date.now() / 1000);
+            
+            // Use modulo so everyone in the world is at the same exact second
+            let syncTime = nowSeconds % Math.floor(duration);
+            
+            player.seekTo(syncTime, true);
         }
         
         // Restore volume after a tiny delay so the original start audio isn't heard
         setTimeout(() => {
             player.setVolume(100);
         }, 150);
+    } else if (event.data === YT.PlayerState.ENDED) {
+        // Loop the same station when it finishes, keeping it playing continuously
+        const s = stations[currentStationIndex];
+        if (s.ytIndex !== -1) {
+            isSwitchingStation = true;
+            player.setVolume(0);
+            player.playVideoAt(s.ytIndex);
+        }
     }
 }
 
