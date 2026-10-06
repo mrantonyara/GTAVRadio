@@ -47,14 +47,10 @@ stations.forEach((station, i) => {
 });
 
 function calculateRadius() {
-    let w = carousel.offsetWidth;
-    if (!w || w < 50) w = Math.min(window.innerWidth * 0.4, 250); // Fallback to viewport width
-    
-    let calcRadius = Math.round((w / 2.5) / Math.tan(Math.PI / totalStations));
-    if (isNaN(calcRadius) || calcRadius < 100) calcRadius = 250;
-    if (calcRadius > 500) calcRadius = 500;
-    
-    radius = calcRadius;
+    let size = Math.min(window.innerWidth, window.innerHeight);
+    radius = (size * 0.4) - 40; // 40% of screen size minus some padding
+    if (radius < 100) radius = 100;
+    if (radius > 350) radius = 350;
     updateCarousel(currentRotation);
 }
 window.addEventListener('resize', calculateRadius);
@@ -148,13 +144,11 @@ function updateCarousel(rotation) {
         const itemRot = i * theta + rotation;
         const div = document.getElementById(`station-${i}`);
         
-        if (isHorizontal) {
-            div.style.webkitTransform = `rotateY(${itemRot}deg) translateZ(${radius}px)`;
-            div.style.transform = `rotateY(${itemRot}deg) translateZ(${radius}px)`;
-        } else {
-            div.style.webkitTransform = `rotateX(${itemRot}deg) translateZ(${radius}px)`;
-            div.style.transform = `rotateX(${itemRot}deg) translateZ(${radius}px)`;
-        }
+        // 2D Wheel logic: Rotate container, push out by radius, counter-rotate so images stay upright
+        let transformStr = `translate(-50%, -50%) rotate(${itemRot}deg) translateY(${-radius}px) rotate(${-itemRot}deg)`;
+        
+        div.style.webkitTransform = transformStr;
+        div.style.transform = transformStr;
         
         if (i === activeIndex) {
             div.classList.add('active');
