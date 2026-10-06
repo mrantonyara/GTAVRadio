@@ -121,15 +121,7 @@ function updateCarousel(rotation) {
     });
 }
 
-// Initial calculation
-let randomStartIndex = Math.floor(Math.random() * totalStations);
-if (stations[randomStartIndex].ytIndex === -1) {
-    randomStartIndex = (randomStartIndex + 1) % totalStations;
-}
-currentRotation = -randomStartIndex * angleStep;
 
-calculateLayout();
-window.addEventListener('resize', calculateLayout);
 
 // YouTube API
 function onYouTubeIframeAPIReady() {
@@ -317,3 +309,13 @@ document.addEventListener('wheel', (e) => {
         snapAnim();
     }, 150);
 }, {passive: false});
+
+// Initial calculation
+let randomStartIndex = Math.floor(Math.random() * totalStations);
+if (stations[randomStartIndex].ytIndex === -1) {
+    randomStartIndex = (randomStartIndex + 1) % totalStations;
+}
+currentRotation = -randomStartIndex * angleStep;
+
+calculateLayout();
+window.addEventListener('resize', calculateLayout);
