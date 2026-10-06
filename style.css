@@ -13,6 +13,7 @@ html, body {
 .carousel-container {
   width: 100vw;
   height: 100vh;
+  -webkit-perspective: 1000px;
   perspective: 1000px;
   display: flex;
   justify-content: center;
@@ -25,6 +26,7 @@ html, body {
   max-width: 250px;
   height: 40vw;
   max-height: 250px;
+  -webkit-transform-style: preserve-3d;
   transform-style: preserve-3d;
 }
 
@@ -37,6 +39,7 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   pointer-events: none;
 }
@@ -55,6 +58,7 @@ html, body {
 .station.active img {
   border-color: white;
   box-shadow: none;
+  -webkit-transform: scale(1.2);
   transform: scale(1.2);
   filter: grayscale(0%) brightness(1);
 }

@@ -39,8 +39,8 @@ stations.forEach((station, i) => {
     div.id = `station-${i}`;
     
     const img = document.createElement('img');
-    img.src = station.icon;
-    img.onerror = () => { img.src = 'assets/icons/mute.png'; };
+    img.src = encodeURI(station.icon);
+    img.onerror = function() { if (this.src.indexOf('mute.png') === -1) { this.src = 'assets/icons/mute.png'; } };
     
     div.appendChild(img);
     carousel.appendChild(div);
@@ -143,8 +143,10 @@ function updateCarousel(rotation) {
         const div = document.getElementById(`station-${i}`);
         
         if (isHorizontal) {
+            div.style.webkitTransform = `rotateY(${itemRot}deg) translateZ(${radius}px)`;
             div.style.transform = `rotateY(${itemRot}deg) translateZ(${radius}px)`;
         } else {
+            div.style.webkitTransform = `rotateX(${itemRot}deg) translateZ(${radius}px)`;
             div.style.transform = `rotateX(${itemRot}deg) translateZ(${radius}px)`;
         }
         
