@@ -80,6 +80,11 @@ function updateCarousel(rotation) {
     }
 
     stations.forEach((s, i) => {
+        const size = Math.min(w, h) * 0.22;
+        const finalSize = Math.max(75, Math.min(120, size)); // Apply min/max
+        div.style.width = finalSize + 'px';
+        div.style.height = finalSize + 'px';
+        
         const itemRot = i * angleStep + rotation;
         const div = document.getElementById(`station-${i}`);
         
