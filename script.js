@@ -7,6 +7,7 @@ const stations = [
   { name: "Los Santos Rock Radio", icon: "assets/icons/Los%20Santos%20Rock%20Radio.png", ytIndex: 2 },
   { name: "Non-Stop-Pop FM", icon: "assets/icons/Non-Stop-Pop%20FM.png", ytIndex: 1 },
   { name: "Radio Los Santos", icon: "assets/icons/Radio%20Los%20Santos.png", ytIndex: 3 },
+  { name: "Channel X", icon: "assets/icons/Channel%20X.png", ytIndex: 10 },
   { name: "Soulwax FM", icon: "assets/icons/Soulwax%20FM.png", ytIndex: 12 },
   { name: "East Los FM", icon: "assets/icons/East%20Los%20FM.png", ytIndex: 9 },
   { name: "West Coast Classics", icon: "assets/icons/West%20Coast%20Classics.png", ytIndex: 4 },
@@ -22,11 +23,7 @@ const stations = [
 ];
 
 const totalStations = stations.length;
-const angleStep = (2 * Math.PI) / totalStations;
-const stationAngles = [];
-for (let i = 0; i < totalStations; i++) {
-    stationAngles.push(i * angleStep);
-}
+const angleStep = 360 / totalStations;
 const wheel = document.getElementById('wheel-container');
 
 let player = null;
@@ -34,7 +31,9 @@ let isPlayerReady = false;
 let hasInteracted = false;
 let isSwitchingStation = false;
 let currentStationIndex = -1;
-let layout = 'wheel';
+
+let currentRotation = 0;
+let radius = 0;
 
 // Setup DOM elements
 stations.forEach((station, i) => {
@@ -54,62 +53,78 @@ stations.forEach((station, i) => {
     wheel.appendChild(div);
 });
 
-function render() {
+function calculateLayout() {
     const w = window.innerWidth;
     const h = window.innerHeight;
-    layout = w > h ? 'wheel' : 'vertical';
     
-    if (layout === 'wheel') {
-        const radius = Math.min(w, h) * 0.42; // Increased distance
-        
-        stations.forEach((s, i) => {
-            const div = document.getElementById(`station-${i}`);
-            const angle = stationAngles[i] - (Math.PI / 2);
-            const x = Math.cos(angle) * radius;
-            const y = Math.sin(angle) * radius;
-            
-            div.style.transform = `translate(${x}px, ${y}px)`;
-            
-            if (i === currentStationIndex) {
-                div.classList.add('active');
-            } else {
-                div.classList.remove('active');
-            }
-        });
-    } else {
-        // Vertical List Layout
-        const itemSpacing = Math.min(w, h) * 0.22; 
-        
-        stations.forEach((s, i) => {
-            const div = document.getElementById(`station-${i}`);
-            
-            let diff = i - currentStationIndex;
-            // Shortest path wrapping
-            if (diff > totalStations / 2) diff -= totalStations;
-            if (diff < -totalStations / 2) diff += totalStations;
-            
-            const y = diff * itemSpacing;
-            
-            div.style.transform = `translate(0px, ${y}px)`;
-            
-            if (i === currentStationIndex) {
-                div.classList.add('active');
-            } else {
-                div.classList.remove('active');
-            }
-            
-            // Fade out items that are far away in vertical mode
-            if (Math.abs(diff) > 3) {
-                div.style.opacity = '0';
-                div.style.pointerEvents = 'none';
-            } else {
-                div.style.opacity = ''; // rely on CSS
-            }
-        });
-    }
+    // We want the wheel center to be far below the screen.
+    // The visible arc should pass near the center of the screen.
+    // Let's use a very large radius so it looks like a shallow arc.
+    radius = Math.max(w, h) * 0.6; 
+    // Wait, to keep it consistently at the same screen height:
+    // If center is at 120vh, radius should be based on window height so the top arc is always visible.
+    // E.g., if radius = h * 0.8, top is at 40vh.
+    radius = h * 0.85; // Active item at 35vh (slightly above center)
+    
+    updateCarousel(currentRotation);
 }
 
-window.addEventListener('resize', render);
+function updateCarousel(rotation) {
+    let normalizedRot = rotation % 360;
+    if (normalizedRot < 0) normalizedRot += 360;
+    
+    let activeIndex = Math.round(normalizedRot / angleStep) % totalStations;
+    activeIndex = (totalStations - activeIndex) % totalStations;
+
+    if (activeIndex !== currentStationIndex) {
+        currentStationIndex = activeIndex;
+        playCurrentStation();
+    }
+
+    stations.forEach((s, i) => {
+        const itemRot = i * angleStep + rotation;
+        const div = document.getElementById(`station-${i}`);
+        
+        // 2D Rotation: container rotates, moves up by radius, then icon counter-rotates to stay upright
+        let transformStr = `translate(-50%, -50%) rotate(${itemRot}deg) translateY(${-radius}px) rotate(${-itemRot}deg)`;
+        
+        div.style.webkitTransform = transformStr;
+        div.style.transform = transformStr;
+        
+        if (i === activeIndex) {
+            div.classList.add('active');
+            div.style.opacity = '1';
+            div.style.zIndex = '10';
+            div.style.pointerEvents = 'auto';
+        } else {
+            div.classList.remove('active');
+            div.style.zIndex = '1';
+            div.style.pointerEvents = 'none';
+            
+            // Fade out items that are further away in the rotation
+            // The shortest angular distance to the top (which is 0deg visually for the container)
+            let angleDiff = Math.abs((itemRot % 360 + 360) % 360);
+            if (angleDiff > 180) angleDiff = 360 - angleDiff;
+            
+            // If it's more than ~40 degrees away, fade it out completely
+            if (angleDiff > 45) {
+                div.style.opacity = '0';
+            } else {
+                div.style.opacity = '0.6';
+            }
+        }
+    });
+}
+
+// Initial calculation
+let randomStartIndex = Math.floor(Math.random() * totalStations);
+if (stations[randomStartIndex].ytIndex === -1) {
+    randomStartIndex = (randomStartIndex + 1) % totalStations;
+}
+currentRotation = -randomStartIndex * angleStep;
+
+calculateLayout();
+window.addEventListener('resize', calculateLayout);
 
 // YouTube API
 function onYouTubeIframeAPIReady() {
@@ -151,11 +166,12 @@ function playCurrentStation() {
     playTimeout = setTimeout(() => {
         if (!isPlayerReady || currentStationIndex === -1) return;
         
+        if (!hasInteracted) return; // Only play if user has interacted
+        
         const s = stations[currentStationIndex];
         if (s.ytIndex === -1) {
             player.pauseVideo();
         } else {
-            // Instant load at specific time (avoids double buffering)
             const syncTime = Math.floor(Date.now() / 1000) % 3600; 
             player.loadPlaylist({
                 listType: 'playlist',
@@ -165,124 +181,134 @@ function playCurrentStation() {
             });
             player.setVolume(100);
         }
-    }, 50); // Reduced to 50ms for even faster response
+    }, 50); 
 }
-
-function setActiveStation(index, forcePlay = false) {
-    if (index === currentStationIndex && !forcePlay) return;
-    currentStationIndex = index;
-    render(); // Re-render handles active classes and vertical positioning
-    
-    if (!hasInteracted && isPlayerReady) {
-        hasInteracted = true;
-    }
-    
-    playCurrentStation();
-}
-
-// Initial active station
-let randomStartIndex = Math.floor(Math.random() * totalStations);
-if (stations[randomStartIndex].ytIndex === -1) {
-    randomStartIndex = (randomStartIndex + 1) % totalStations;
-}
-setActiveStation(randomStartIndex);
 
 // Input Handling
-let isInteracting = false;
-let startY = 0;
-let startIndex = 0;
+let isDragging = false;
+let startPos = 0;
+let startRotation = 0;
+let velocity = 0;
+let lastPos = 0;
+let lastTime = 0;
+let raf;
 
-function handleInteractionStart(clientX, clientY) {
-    const isFirst = !hasInteracted;
-    isInteracting = true;
-    if (layout === 'wheel') {
-        if (isFirst) setActiveStation(currentStationIndex, true);
-        updateWheelPointer(clientX, clientY);
-    } else {
-        startY = clientY;
-        startIndex = currentStationIndex;
-        if (isFirst) setActiveStation(currentStationIndex, true);
+function handleFirstInteraction() {
+    if (!hasInteracted && isPlayerReady) {
+        hasInteracted = true;
+        playCurrentStation();
     }
 }
 
-function handleInteractionMove(clientX, clientY) {
-    if (!isInteracting) return;
-    
-    if (layout === 'wheel') {
-        updateWheelPointer(clientX, clientY);
-    } else {
-        // Vertical logic: dragging up/down changes index
-        const dy = clientY - startY;
-        const itemSpacing = Math.min(window.innerWidth, window.innerHeight) * 0.22;
-        
-        // How many items scrolled?
-        let steps = -Math.round(dy / itemSpacing);
-        let newIndex = (startIndex + steps) % totalStations;
-        if (newIndex < 0) newIndex += totalStations;
-        
-        setActiveStation(newIndex);
+function getClientPos(e) {
+    if (e.touches && e.touches.length > 0) {
+        return e.touches[0].clientX; // Always use horizontal swipe for the arc
     }
+    return e.clientX;
 }
 
-function handleInteractionEnd() {
-    isInteracting = false;
+function onStart(e) {
+    handleFirstInteraction();
+    isDragging = true;
+    const pos = getClientPos(e);
+    startPos = pos;
+    startRotation = currentRotation;
+    velocity = 0;
+    lastPos = pos;
+    lastTime = Date.now();
+    cancelAnimationFrame(raf);
 }
 
-function updateWheelPointer(clientX, clientY) {
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
+function onMove(e) {
+    if (!isDragging) return;
+    const pos = getClientPos(e);
+    const deltaPos = pos - startPos;
+    const now = Date.now();
+    const dt = now - lastTime;
     
-    const dx = clientX - centerX;
-    const dy = clientY - centerY;
+    // Convert horizontal pixel movement to degrees of rotation
+    const directionMult = 0.15; 
     
-    let pointerAngle = Math.atan2(dy, dx) + Math.PI / 2;
-    if (pointerAngle < 0) pointerAngle += 2 * Math.PI;
+    currentRotation = startRotation + (deltaPos * directionMult);
+    updateCarousel(currentRotation);
     
-    let closestIndex = 0;
-    let minDiff = Infinity;
-    for (let i = 0; i < totalStations; i++) {
-        let diff = Math.abs(pointerAngle - stationAngles[i]);
-        if (diff > Math.PI) diff = 2 * Math.PI - diff;
-        
-        if (diff < minDiff) {
-            minDiff = diff;
-            closestIndex = i;
+    if (dt > 0) {
+        velocity = ((pos - lastPos) / dt) * directionMult;
+    }
+    lastPos = pos;
+    lastTime = now;
+}
+
+function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    
+    let speed = velocity * 15;
+    
+    function animate() {
+        if (Math.abs(speed) > 0.1) {
+            currentRotation += speed;
+            speed *= 0.92;
+            updateCarousel(currentRotation);
+            raf = requestAnimationFrame(animate);
+        } else {
+            const snapRotation = Math.round(currentRotation / angleStep) * angleStep;
+            const diff = snapRotation - currentRotation;
+            
+            if (Math.abs(diff) > 0.5) {
+                currentRotation += diff * 0.15;
+                updateCarousel(currentRotation);
+                raf = requestAnimationFrame(animate);
+            } else {
+                currentRotation = snapRotation;
+                updateCarousel(currentRotation);
+                playCurrentStation();
+            }
         }
     }
-    setActiveStation(closestIndex);
+    raf = requestAnimationFrame(animate);
 }
 
-document.addEventListener('mousedown', (e) => {
-    handleInteractionStart(e.clientX, e.clientY);
-});
+// Mouse
+document.addEventListener('mousedown', onStart);
+document.addEventListener('mousemove', onMove);
+document.addEventListener('mouseup', onEnd);
 
-document.addEventListener('mousemove', (e) => {
-    handleInteractionMove(e.clientX, e.clientY);
-});
-
-document.addEventListener('mouseup', handleInteractionEnd);
-
-document.addEventListener('touchstart', (e) => {
-    handleInteractionStart(e.touches[0].clientX, e.touches[0].clientY);
-}, {passive: false});
-
+// Touch
+document.addEventListener('touchstart', onStart, {passive: false});
 document.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    handleInteractionMove(e.touches[0].clientX, e.touches[0].clientY);
+    e.preventDefault(); 
+    onMove(e);
 }, {passive: false});
+document.addEventListener('touchend', onEnd);
 
-document.addEventListener('touchend', handleInteractionEnd);
-
-// Mouse wheel for vertical layout (or wheel)
+// Mouse wheel
 let wheelTimeout;
 document.addEventListener('wheel', (e) => {
     e.preventDefault();
+    handleFirstInteraction();
+    
+    const delta = e.deltaY || e.deltaX;
+    currentRotation += delta * 0.1;
+    updateCarousel(currentRotation);
+    
     clearTimeout(wheelTimeout);
     wheelTimeout = setTimeout(() => {
-        let steps = e.deltaY > 0 ? 1 : -1;
-        let newIndex = (currentStationIndex + steps) % totalStations;
-        if (newIndex < 0) newIndex += totalStations;
-        setActiveStation(newIndex);
-    }, 50); // debounce scroll slightly
+        const snapRotation = Math.round(currentRotation / angleStep) * angleStep;
+        
+        function snapAnim() {
+            const diff = snapRotation - currentRotation;
+            if (Math.abs(diff) > 0.5) {
+                currentRotation += diff * 0.15;
+                updateCarousel(currentRotation);
+                raf = requestAnimationFrame(snapAnim);
+            } else {
+                currentRotation = snapRotation;
+                updateCarousel(currentRotation);
+                playCurrentStation();
+            }
+        }
+        cancelAnimationFrame(raf);
+        snapAnim();
+    }, 150);
 }, {passive: false});
-
