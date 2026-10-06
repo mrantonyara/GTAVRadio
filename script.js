@@ -23,7 +23,15 @@ const stations = [
 ];
 
 const totalStations = stations.length;
-const angleStep = (2 * Math.PI) / totalStations;
+const stationAngles = [];
+for (let i = 0; i < totalStations; i++) {
+    let a;
+    if (i === 0) a = 0; // Top
+    else if (i === 9) a = Math.PI; // Bottom
+    else if (i < 9) a = i * (Math.PI / 9); // Right side
+    else a = Math.PI + (i - 9) * (Math.PI / 10); // Left side
+    stationAngles.push(a);
+}
 const wheel = document.getElementById('wheel-container');
 
 let player = null;
@@ -61,7 +69,7 @@ function render() {
         
         stations.forEach((s, i) => {
             const div = document.getElementById(`station-${i}`);
-            const angle = i * angleStep - (Math.PI / 2);
+            const angle = stationAngles[i] - (Math.PI / 2);
             const x = Math.cos(angle) * radius;
             const y = Math.sin(angle) * radius;
             
@@ -239,12 +247,21 @@ function updateWheelPointer(clientX, clientY) {
     const dx = clientX - centerX;
     const dy = clientY - centerY;
     
-    let angle = Math.atan2(dy, dx);
-    angle += Math.PI / 2;
-    if (angle < 0) angle += 2 * Math.PI;
+    let pointerAngle = Math.atan2(dy, dx) + Math.PI / 2;
+    if (pointerAngle < 0) pointerAngle += 2 * Math.PI;
     
-    let index = Math.round(angle / angleStep) % totalStations;
-    setActiveStation(index);
+    let closestIndex = 0;
+    let minDiff = Infinity;
+    for (let i = 0; i < totalStations; i++) {
+        let diff = Math.abs(pointerAngle - stationAngles[i]);
+        if (diff > Math.PI) diff = 2 * Math.PI - diff;
+        
+        if (diff < minDiff) {
+            minDiff = diff;
+            closestIndex = i;
+        }
+    }
+    setActiveStation(closestIndex);
 }
 
 document.addEventListener('mousedown', (e) => {
