@@ -88,23 +88,27 @@ stations.forEach((station, i) => {
     carousel.appendChild(div);
 });
 
+let isHorizontal = true;
 let currentRotation = 0;
 let currentStationIndex = 0;
 let isDragging = false;
-let startX = 0;
+let startPos = 0;
 let startRotation = 0;
 let velocity = 0;
-let lastX = 0;
+let lastPos = 0;
 let lastTime = 0;
 let raf;
 
+document.getElementById('btn-toggle-axis').addEventListener('click', () => {
+    isHorizontal = !isHorizontal;
+    updateCarousel(currentRotation);
+});
+
 function updateCarousel(rotation) {
-    // Normalize index
     let normalizedRot = rotation % 360;
     if (normalizedRot < 0) normalizedRot += 360;
     
     let activeIndex = Math.round(normalizedRot / theta) % totalStations;
-    // The visual active index is opposite to the rotation direction
     activeIndex = (totalStations - activeIndex) % totalStations;
 
     if (activeIndex !== currentStationIndex) {
@@ -112,11 +116,15 @@ function updateCarousel(rotation) {
         stationNameEl.innerText = stations[currentStationIndex].name;
     }
 
-    // Apply 3D transforms
     for (let i = 0; i < totalStations; i++) {
         const itemRot = i * theta + rotation;
         const div = document.getElementById(`station-${i}`);
-        div.style.transform = `rotateY(${itemRot}deg) translateZ(${radius}px)`;
+        
+        if (isHorizontal) {
+            div.style.transform = `rotateY(${itemRot}deg) translateZ(${radius}px)`;
+        } else {
+            div.style.transform = `rotateX(${itemRot}deg) translateZ(${radius}px)`;
+        }
         
         if (i === activeIndex) {
             div.classList.add('active');
@@ -139,37 +147,46 @@ function playCurrentStation() {
         if (s.ytIndex === -1) {
             player.pauseVideo();
         } else {
-            // Check if playing correct index, if not playVideoAt
-            // Note: YouTube playlist index is 0-based
             player.playVideoAt(s.ytIndex);
         }
-    }, 400); // Wait a bit after wheel stops spinning
+    }, 400); 
 }
 
 // Input Handling
-function onStart(x) {
+function getClientPos(e) {
+    if (e.touches && e.touches.length > 0) {
+        return isHorizontal ? e.touches[0].clientX : e.touches[0].clientY;
+    }
+    return isHorizontal ? e.clientX : e.clientY;
+}
+
+function onStart(e) {
     isDragging = true;
-    startX = x;
+    const pos = getClientPos(e);
+    startPos = pos;
     startRotation = currentRotation;
     velocity = 0;
-    lastX = x;
+    lastPos = pos;
     lastTime = Date.now();
     cancelAnimationFrame(raf);
 }
 
-function onMove(x) {
+function onMove(e) {
     if (!isDragging) return;
-    const deltaX = x - startX;
+    const pos = getClientPos(e);
+    const deltaPos = pos - startPos;
     const now = Date.now();
     const dt = now - lastTime;
     
-    currentRotation = startRotation + (deltaX * 0.4);
+    const directionMult = isHorizontal ? 0.4 : -0.4;
+    
+    currentRotation = startRotation + (deltaPos * directionMult);
     updateCarousel(currentRotation);
     
     if (dt > 0) {
-        velocity = (x - lastX) / dt;
+        velocity = ((pos - lastPos) / dt) * directionMult;
     }
-    lastX = x;
+    lastPos = pos;
     lastTime = now;
 }
 
@@ -177,17 +194,15 @@ function onEnd() {
     if (!isDragging) return;
     isDragging = false;
     
-    // Inertia & Snap
     let speed = velocity * 15;
     
     function animate() {
         if (Math.abs(speed) > 0.1) {
             currentRotation += speed;
-            speed *= 0.92; // friction
+            speed *= 0.92;
             updateCarousel(currentRotation);
             raf = requestAnimationFrame(animate);
         } else {
-            // Snap to nearest station
             const snapRotation = Math.round(currentRotation / theta) * theta;
             const diff = snapRotation - currentRotation;
             
@@ -206,14 +221,14 @@ function onEnd() {
 }
 
 // Mouse
-document.addEventListener('mousedown', e => onStart(e.clientX));
-document.addEventListener('mousemove', e => onMove(e.clientX));
+document.addEventListener('mousedown', e => onStart(e));
+document.addEventListener('mousemove', e => onMove(e));
 document.addEventListener('mouseup', onEnd);
 
 // Touch
-document.addEventListener('touchstart', e => onStart(e.touches[0].clientX), {passive: false});
+document.addEventListener('touchstart', e => onStart(e), {passive: false});
 document.addEventListener('touchmove', e => {
-    e.preventDefault(); // prevent scrolling
-    onMove(e.touches[0].clientX);
+    e.preventDefault(); 
+    onMove(e);
 }, {passive: false});
 document.addEventListener('touchend', onEnd);
