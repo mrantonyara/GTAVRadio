@@ -23,14 +23,10 @@ const stations = [
 ];
 
 const totalStations = stations.length;
+const angleStep = (2 * Math.PI) / totalStations;
 const stationAngles = [];
 for (let i = 0; i < totalStations; i++) {
-    let a;
-    if (i === 0) a = 0; // Top
-    else if (i === 9) a = Math.PI; // Bottom
-    else if (i < 9) a = i * (Math.PI / 9); // Right side
-    else a = Math.PI + (i - 9) * (Math.PI / 10); // Left side
-    stationAngles.push(a);
+    stationAngles.push(i * angleStep);
 }
 const wheel = document.getElementById('wheel-container');
 
@@ -142,22 +138,9 @@ function onPlayerReady(event) {
 }
 
 function onPlayerStateChange(event) {
-    if (event.data === YT.PlayerState.PLAYING && isSwitchingStation) {
-        isSwitchingStation = false;
-        
-        let duration = player.getDuration();
-        if (duration > 0) {
-            const nowSeconds = Math.floor(Date.now() / 1000);
-            let syncTime = nowSeconds % Math.floor(duration);
-            player.seekTo(syncTime, true);
-        }
-        
-        player.setVolume(100);
-    } else if (event.data === YT.PlayerState.ENDED) {
+    if (event.data === YT.PlayerState.ENDED) {
         const s = stations[currentStationIndex];
         if (s && s.ytIndex !== -1) {
-            isSwitchingStation = true;
-            player.setVolume(0);
             player.playVideoAt(s.ytIndex);
         }
     }
@@ -173,11 +156,17 @@ function playCurrentStation() {
         if (s.ytIndex === -1) {
             player.pauseVideo();
         } else {
-            isSwitchingStation = true;
-            player.setVolume(0); 
-            player.playVideoAt(s.ytIndex);
+            // Instant load at specific time (avoids double buffering)
+            const syncTime = Math.floor(Date.now() / 1000) % 3600; 
+            player.loadPlaylist({
+                listType: 'playlist',
+                list: playlistId,
+                index: s.ytIndex,
+                startSeconds: syncTime
+            });
+            player.setVolume(100);
         }
-    }, 80); // Fast 80ms debounce for snappy switching
+    }, 50); // Reduced to 50ms for even faster response
 }
 
 function setActiveStation(index, forcePlay = false) {
