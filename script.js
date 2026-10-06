@@ -59,14 +59,10 @@ function calculateLayout() {
     w = window.innerWidth;
     h = window.innerHeight;
     
-    // We want the wheel center to be far below the screen.
-    // The visible arc should pass near the center of the screen.
-    // Let's use a very large radius so it looks like a shallow arc.
-    radius = Math.max(w, h) * 0.6; 
-    // Wait, to keep it consistently at the same screen height:
-    // If center is at 120vh, radius should be based on window height so the top arc is always visible.
-    // E.g., if radius = h * 0.8, top is at 40vh.
-    radius = h * 0.85; // Active item at 35vh (slightly above center)
+    const isPortrait = h > w;
+    // On phones (portrait), use a smaller radius based on width so icons aren't too far apart.
+    // On desktop (landscape), use a larger radius for a flatter arc.
+    radius = isPortrait ? w * 1.05 : h * 0.9;
     
     updateCarousel(currentRotation);
 }
@@ -90,7 +86,8 @@ function updateCarousel(rotation) {
         // 2D Rotation: container rotates, moves up by radius, then icon counter-rotates to stay upright
         // The origin of the wheel is at center-x, and 1.2 * h
         const originX = w / 2;
-        const originY = h * 1.2;
+        // Keep the top of the wheel always at 35% of the screen height
+        const originY = (h * 0.35) + radius;
         let transformStr = `translate(${originX}px, ${originY}px) translate(-50%, -50%) rotate(${itemRot}deg) translateY(${-radius}px) rotate(${-itemRot}deg)`;
         
         div.style.webkitTransform = transformStr;
