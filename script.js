@@ -2,11 +2,11 @@ const playlistId = 'PLLvWV__Bn2_PwR92FfrxjsZCAM7zyxzze';
 
 const stations = [
   { name: "Los Santos Underground Radio", icon: "assets/icons/Los%20Santos%20Underground%20Radio.png", ytIndex: 16 },
+  { name: "blonded Los Santos 97.8 FM", icon: "assets/icons/blonded%20Los%20Santos%2097.8%20FM.png", ytIndex: 23 },
   { name: "Music Locker Radio", icon: "assets/icons/Music%20Locker%20Radio.png", ytIndex: 20 },
   { name: "Los Santos Rock Radio", icon: "assets/icons/Los%20Santos%20Rock%20Radio.png", ytIndex: 2 },
   { name: "Non-Stop-Pop FM", icon: "assets/icons/Non-Stop-Pop%20FM.png", ytIndex: 1 },
   { name: "Radio Los Santos", icon: "assets/icons/Radio%20Los%20Santos.png", ytIndex: 3 },
-  { name: "Channel X", icon: "assets/icons/Channel%20X.png", ytIndex: 10 },
   { name: "Soulwax FM", icon: "assets/icons/Soulwax%20FM.png", ytIndex: 12 },
   { name: "East Los FM", icon: "assets/icons/East%20Los%20FM.png", ytIndex: 9 },
   { name: "West Coast Classics", icon: "assets/icons/West%20Coast%20Classics.png", ytIndex: 4 },
@@ -18,8 +18,7 @@ const stations = [
   { name: "The Lab", icon: "assets/icons/The%20Lab.png", ytIndex: 15 },
   { name: "Radio Mirror Park", icon: "assets/icons/Radio%20Mirror%20Park.png", ytIndex: 11 },
   { name: "Space 103.2", icon: "assets/icons/Space%20103.2.png", ytIndex: 0 },
-  { name: "Vinewood Boulevard Radio", icon: "assets/icons/Vinewood%20Boulevard%20Radio.png", ytIndex: 14 },
-  { name: "blonded Los Santos 97.8 FM", icon: "assets/icons/blonded%20Los%20Santos%2097.8%20FM.png", ytIndex: 23 }
+  { name: "Vinewood Boulevard Radio", icon: "assets/icons/Vinewood%20Boulevard%20Radio.png", ytIndex: 14 }
 ];
 
 const totalStations = stations.length;
