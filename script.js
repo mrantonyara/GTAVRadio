@@ -24,15 +24,14 @@ const stations = [
 
 const totalStations = stations.length;
 const angleStep = (2 * Math.PI) / totalStations;
-
 const wheel = document.getElementById('wheel-container');
-const stationNameEl = document.getElementById('station-name');
 
 let player = null;
 let isPlayerReady = false;
 let hasInteracted = false;
 let isSwitchingStation = false;
 let currentStationIndex = -1;
+let layout = 'wheel';
 
 // Setup DOM elements
 stations.forEach((station, i) => {
@@ -52,24 +51,62 @@ stations.forEach((station, i) => {
     wheel.appendChild(div);
 });
 
-function arrangeStations() {
-    const size = Math.min(window.innerWidth, window.innerHeight);
-    const radius = size * 0.38; // Distance from center
+function render() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    layout = w > h ? 'wheel' : 'vertical';
     
-    stations.forEach((s, i) => {
-        const div = document.getElementById(`station-${i}`);
-        // Offset by -90deg (-PI/2) so index 0 is at the top
-        const angle = i * angleStep - (Math.PI / 2);
-        const x = Math.cos(angle) * radius;
-        const y = Math.sin(angle) * radius;
+    if (layout === 'wheel') {
+        const radius = Math.min(w, h) * 0.42; // Increased distance
         
-        div.style.transform = `translate(${x}px, ${y}px)`;
-    });
+        stations.forEach((s, i) => {
+            const div = document.getElementById(`station-${i}`);
+            const angle = i * angleStep - (Math.PI / 2);
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            
+            div.style.transform = `translate(${x}px, ${y}px)`;
+            
+            if (i === currentStationIndex) {
+                div.classList.add('active');
+            } else {
+                div.classList.remove('active');
+            }
+        });
+    } else {
+        // Vertical List Layout
+        const itemSpacing = Math.min(w, h) * 0.22; 
+        
+        stations.forEach((s, i) => {
+            const div = document.getElementById(`station-${i}`);
+            
+            let diff = i - currentStationIndex;
+            // Shortest path wrapping
+            if (diff > totalStations / 2) diff -= totalStations;
+            if (diff < -totalStations / 2) diff += totalStations;
+            
+            const y = diff * itemSpacing;
+            
+            div.style.transform = `translate(0px, ${y}px)`;
+            
+            if (i === currentStationIndex) {
+                div.classList.add('active');
+            } else {
+                div.classList.remove('active');
+            }
+            
+            // Fade out items that are far away in vertical mode
+            if (Math.abs(diff) > 3) {
+                div.style.opacity = '0';
+                div.style.pointerEvents = 'none';
+            } else {
+                div.style.opacity = ''; // rely on CSS
+            }
+        });
+    }
 }
 
-// Initial draw calculations
-arrangeStations();
-window.addEventListener('resize', arrangeStations);
+window.addEventListener('resize', render);
 
 // YouTube API
 function onYouTubeIframeAPIReady() {
@@ -139,14 +176,8 @@ function playCurrentStation() {
 
 function setActiveStation(index) {
     if (index === currentStationIndex) return;
-    
-    if (currentStationIndex !== -1) {
-        document.getElementById(`station-${currentStationIndex}`).classList.remove('active');
-    }
-    
     currentStationIndex = index;
-    document.getElementById(`station-${currentStationIndex}`).classList.add('active');
-    stationNameEl.innerText = stations[currentStationIndex].name;
+    render(); // Re-render handles active classes and vertical positioning
     
     if (!hasInteracted && isPlayerReady) {
         hasInteracted = true;
@@ -160,55 +191,88 @@ setActiveStation(stations.length - 1); // Start with "Radio Off"
 
 // Input Handling
 let isInteracting = false;
+let startY = 0;
+let startIndex = 0;
 
-function updatePointer(clientX, clientY) {
+function handleInteractionStart(clientX, clientY) {
+    isInteracting = true;
+    if (layout === 'wheel') {
+        updateWheelPointer(clientX, clientY);
+    } else {
+        startY = clientY;
+        startIndex = currentStationIndex;
+    }
+}
+
+function handleInteractionMove(clientX, clientY) {
+    if (!isInteracting) return;
+    
+    if (layout === 'wheel') {
+        updateWheelPointer(clientX, clientY);
+    } else {
+        // Vertical logic: dragging up/down changes index
+        const dy = clientY - startY;
+        const itemSpacing = Math.min(window.innerWidth, window.innerHeight) * 0.22;
+        
+        // How many items scrolled?
+        let steps = -Math.round(dy / itemSpacing);
+        let newIndex = (startIndex + steps) % totalStations;
+        if (newIndex < 0) newIndex += totalStations;
+        
+        setActiveStation(newIndex);
+    }
+}
+
+function handleInteractionEnd() {
+    isInteracting = false;
+}
+
+function updateWheelPointer(clientX, clientY) {
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
     
     const dx = clientX - centerX;
     const dy = clientY - centerY;
     
-    // Calculate angle in radians
     let angle = Math.atan2(dy, dx);
-    
-    // Shift angle by +90deg (PI/2) to make 0 at the top, and wrap to 0-2PI
     angle += Math.PI / 2;
     if (angle < 0) angle += 2 * Math.PI;
     
-    // Find closest station index
     let index = Math.round(angle / angleStep) % totalStations;
-    
     setActiveStation(index);
 }
 
 document.addEventListener('mousedown', (e) => {
-    isInteracting = true;
-    updatePointer(e.clientX, e.clientY);
+    handleInteractionStart(e.clientX, e.clientY);
 });
 
 document.addEventListener('mousemove', (e) => {
-    if (isInteracting) {
-        updatePointer(e.clientX, e.clientY);
-    }
+    handleInteractionMove(e.clientX, e.clientY);
 });
 
-document.addEventListener('mouseup', () => {
-    isInteracting = false;
-});
+document.addEventListener('mouseup', handleInteractionEnd);
 
-// Touch support
 document.addEventListener('touchstart', (e) => {
-    isInteracting = true;
-    updatePointer(e.touches[0].clientX, e.touches[0].clientY);
+    handleInteractionStart(e.touches[0].clientX, e.touches[0].clientY);
 }, {passive: false});
 
 document.addEventListener('touchmove', (e) => {
-    if (isInteracting) {
-        e.preventDefault();
-        updatePointer(e.touches[0].clientX, e.touches[0].clientY);
-    }
+    e.preventDefault();
+    handleInteractionMove(e.touches[0].clientX, e.touches[0].clientY);
 }, {passive: false});
 
-document.addEventListener('touchend', () => {
-    isInteracting = false;
-});
+document.addEventListener('touchend', handleInteractionEnd);
+
+// Mouse wheel for vertical layout (or wheel)
+let wheelTimeout;
+document.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    clearTimeout(wheelTimeout);
+    wheelTimeout = setTimeout(() => {
+        let steps = e.deltaY > 0 ? 1 : -1;
+        let newIndex = (currentStationIndex + steps) % totalStations;
+        if (newIndex < 0) newIndex += totalStations;
+        setActiveStation(newIndex);
+    }, 50); // debounce scroll slightly
+}, {passive: false});
+
