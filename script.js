@@ -264,3 +264,37 @@ document.addEventListener('touchmove', e => {
     onMove(e);
 }, {passive: false});
 document.addEventListener('touchend', onEnd);
+
+// Mouse wheel (Scroll) Support
+let wheelTimeout;
+document.addEventListener('wheel', (e) => {
+    e.preventDefault(); 
+    
+    const delta = isHorizontal ? (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) : e.deltaY;
+    const directionMult = isHorizontal ? 0.3 : -0.3;
+    
+    currentRotation += delta * directionMult;
+    updateCarousel(currentRotation);
+    
+    clearTimeout(wheelTimeout);
+    wheelTimeout = setTimeout(() => {
+        const snapRotation = Math.round(currentRotation / theta) * theta;
+        let speed = (snapRotation - currentRotation) * 0.1;
+        
+        function snapAnim() {
+            const diff = snapRotation - currentRotation;
+            if (Math.abs(diff) > 0.5) {
+                currentRotation += diff * 0.15;
+                updateCarousel(currentRotation);
+                raf = requestAnimationFrame(snapAnim);
+            } else {
+                currentRotation = snapRotation;
+                updateCarousel(currentRotation);
+                handleFirstInteraction();
+                if (hasInteracted) playCurrentStation();
+            }
+        }
+        cancelAnimationFrame(raf);
+        snapAnim();
+    }, 150);
+}, {passive: false});
