@@ -34,6 +34,8 @@ let currentStationIndex = -1;
 
 let currentRotation = 0;
 let radius = 0;
+let w = window.innerWidth;
+let h = window.innerHeight;
 
 // Setup DOM elements
 stations.forEach((station, i) => {
@@ -54,8 +56,8 @@ stations.forEach((station, i) => {
 });
 
 function calculateLayout() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    w = window.innerWidth;
+    h = window.innerHeight;
     
     // We want the wheel center to be far below the screen.
     // The visible arc should pass near the center of the screen.
@@ -86,7 +88,10 @@ function updateCarousel(rotation) {
         const div = document.getElementById(`station-${i}`);
         
         // 2D Rotation: container rotates, moves up by radius, then icon counter-rotates to stay upright
-        let transformStr = `translate(-50%, -50%) rotate(${itemRot}deg) translateY(${-radius}px) rotate(${-itemRot}deg)`;
+        // The origin of the wheel is at center-x, and 1.2 * h
+        const originX = w / 2;
+        const originY = h * 1.2;
+        let transformStr = `translate(${originX}px, ${originY}px) translate(-50%, -50%) rotate(${itemRot}deg) translateY(${-radius}px) rotate(${-itemRot}deg)`;
         
         div.style.webkitTransform = transformStr;
         div.style.transform = transformStr;
